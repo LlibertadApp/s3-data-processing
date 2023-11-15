@@ -2,10 +2,19 @@
   "name": "s3-data-processing",
   "version": "1.0.0",
   "description": "Serverless Framework Python SQS Producer-Consumer on AWS",
-  "author": "",
   "license": "MIT",
+  "scripts": {
+    "local": "sls offline start --stage local",
+    "rollback": "sls rollback",
+    "package": "sls package",
+    "logs": "sls logs --tail",
+    "preapi:deploy": "rm -rf ./.serverless",
+    "deploy": "sls deploy",
+    "remove": "sls remove"
+  },
   "devDependencies": {
     "serverless-lift": "^1.21.0",
+    "serverless-offline": "^13.2.1",
     "serverless-python-requirements": "^6.0.0"
   }
 }
