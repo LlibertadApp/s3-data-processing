@@ -1,0 +1,59 @@
+name: Deploy develop branch
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    environment: dev
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+    - name: Git clone the repository
+      uses: actions/checkout@v3
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Build .env with Python
+      run: |
+        VARIABLES_JSON='{
+          "AWS_REGION": "${{ secrets.AWS_REGION }}",
+          "DATABASE_HOST": "${{ vars.DATABASE_HOST }}",
+          "DATABASE_PORT": "${{ vars.DATABASE_PORT }}",
+          "DATABASE_USER": "${{ vars.DATABASE_USER }}",
+          "DATABASE_PASS": "${{ secrets.DATABASE_PASS }}",
+          "DATABASE_DB": "${{ vars.DATABASE_DB }}",
+          "DATABASE_TYPE": "${{ vars.DATABASE_TYPE }}",
+          "LAMBDA_ROLE_GET_S3": "${{ vars.LAMBDA_ROLE_GET_S3 }}"
+        }'
+        python3 dotEnvGenerator.py "$VARIABLES_JSON"
+        cat .env
+
+    - name: Install dependencies for Serverless Framework
+      run: npm install
+      env:
+        NODE_ENV: ${{ vars.NODE_ENV }}
+
+    - name: configure aws credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::${{secrets.AWS_ACCOUNT_ID}}:role/${{vars.ROLE_TO_ASSUME}}
+        role-session-name: ${{ vars.ROLE_SESSION_NAME }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Deploy with Serverless Framework
+      uses: serverless/github-action@v3.2
+      with:
+        args: deploy --stage=dev
