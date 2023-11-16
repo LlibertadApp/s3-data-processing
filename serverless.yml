@@ -10,14 +10,14 @@ provider:
   tags:
     stage: ${self:custom.stageName}
 
-# useDotenv: true
+useDotenv: true
 
-# plugins:
+plugins:
+  - serverless-python-requirements
   # - serverless-dotenv-plugin
   # - serverless-lift
   # - serverless-iam-roles-per-function
   # - serverless-deployment-bucket
-  # - serverless-python-requirements
   # - serverless-offline
 
 custom:
@@ -33,16 +33,15 @@ custom:
     automatic: true
     number: 3
 
-# package:
-#   patterns:
-#     - "!node_modules/**"
+package:
+  patterns:
+    - "!node_modules/**"
 
 functions:
-  SampleName:
-    DependsOn: "MainQueue"
+  GetS3WriteDb:
     runtime: python3.11
     # role: "arn:asdasd"
-    handler: lambda/SampleName/main.handler
+    handler: lambda/GetS3WriteDb/main.handler
     timeout: ${self:custom.lambdaTimeout}
     memorySize: ${self:custom.lambdaMemory}
     events:
