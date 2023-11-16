@@ -53,3 +53,35 @@ serverless plugin install -n serverless-python-requirements
 ```
 
 Running the above will automatically add `serverless-python-requirements` to `plugins` section in your `serverless.yml` file and add it as a `devDependency` to `package.json` file. The `package.json` file will be automatically created if it doesn't exist beforehand. Now you will be able to add your dependencies to `requirements.txt` file (`Pipfile` and `pyproject.toml` is also supported but requires additional configuration) and they will be automatically injected to Lambda package during build process. For more details about the plugin's configuration, please refer to [official documentation](https://github.com/UnitedIncome/serverless-python-requirements).
+
+
+# SQS Policy and Event
+To enable S3 events to use the Queue as a target, the access policy provided below must be added to the Queue.  
+This solution was provided by [Shilp Thapak](https://stackoverflow.com/users/15030095/shilp-thapak) on [stackoverflow](https://stackoverflow.com/a/68406363).  
+Note: the bucket event configuration and the policy were manually created.
+```
+{
+  "Version": "2012-10-17",
+  "Id": "<example-ID>",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "s3.amazonaws.com"
+      },
+      "Action": [
+        "SQS:SendMessage"
+      ],
+      "Resource": "arn:aws:sqs:<region>:<account-id>:<queue-name>",
+      "Condition": {
+        "ArnLike": {
+          "aws:SourceArn": "arn:aws:s3:::<my-bucket-name>"
+        },
+        "StringEquals": {
+          "aws:SourceAccount": "<bucket-owner-account-id>"
+        }
+      }
+    }
+  ]
+}
+```

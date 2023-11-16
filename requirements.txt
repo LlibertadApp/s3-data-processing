@@ -1,2 +1,2 @@
-boto3==1.26.106
+# boto3==1.26.106  # Already included in AWS Lambda Python runtime.
 psycopg2-binary==2.9.9
