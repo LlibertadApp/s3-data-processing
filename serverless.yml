@@ -39,7 +39,7 @@ package:
 
 functions:
   GetS3WriteDb:
-    runtime: python3.11
+    runtime: python3.9
     # role: ${env:LAMBDA_ROLE_GET_S3}
     handler: lambda/GetS3WriteDb/main.handler
     timeout: ${self:custom.lambdaTimeout}

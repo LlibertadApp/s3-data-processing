@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - feat_sqs_and_lambda_trigger
 
 permissions:
   id-token: write   # This is required for requesting the JWT
@@ -41,10 +42,10 @@ jobs:
         python3 dotEnvGenerator.py "$VARIABLES_JSON"
         cat .env
 
-    - name: Install dependencies for Serverless Framework
-      run: npm install
-      env:
-        NODE_ENV: ${{ vars.NODE_ENV }}
+    # - name: Install dependencies for Serverless Framework
+    #   run: npm install
+    #   env:
+    #     NODE_ENV: ${{ vars.NODE_ENV }}
 
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -53,7 +54,30 @@ jobs:
         role-session-name: ${{ vars.ROLE_SESSION_NAME }}
         aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Deploy with Serverless Framework
-      uses: serverless/github-action@v3.2
-      with:
-        args: deploy --stage=dev
+    # - name: Deploy with Serverless Framework
+    #   uses: serverless/github-action@v3.2
+    #   with:
+    #     args: deploy --stage=dev
+    #   env:
+    #     AWS_REGION: ${{ secrets.AWS_REGION }}
+
+
+    # - name: Install SLS Plugins and Deploy
+    #   uses: serverless/github-action@v3.2
+    #   with:
+    #     args: -c "npm install && npm install -g serverless && npm list -g && npm list && serverless deploy --stage=dev --verbose"
+    #     entrypoint: /bin/sh
+    #   env:
+    #     AWS_REGION: ${{ secrets.AWS_REGION }}
+    #     NODE_ENV: ${{ vars.NODE_ENV }}
+
+    - name: Install SLS to deploy
+      run: |
+        npm install -g serverless
+        npm install
+        npm list -g
+        npm list
+        serverless deploy --stage dev --verbose
+      env:
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        NODE_ENV: ${{ vars.NODE_ENV }}
