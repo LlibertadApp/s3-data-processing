@@ -3,19 +3,81 @@ frameworkVersion: "3"
 
 provider:
   name: aws
-  runtime: python3.9
+  region: ${env:AWS_REGION}
+  deploymentBucket:
+    name: libertapp-serverless-deployments-${self:custom.stageName}
+    # serverSideEncryption: AES256
+  tags:
+    stage: ${self:custom.stageName}
 
-constructs:
-  jobs:
-    type: queue
-    worker:
-      handler: handler.consumer
+# useDotenv: true
 
-plugins:
-  - serverless-lift
-  - serverless-python-requirements
-  - serverless-offline
+# plugins:
+  # - serverless-dotenv-plugin
+  # - serverless-lift
+  # - serverless-iam-roles-per-function
+  # - serverless-deployment-bucket
+  # - serverless-python-requirements
+  # - serverless-offline
 
-package:
-  patterns:
-    - "!node_modules/**"
+custom:
+  stageName: ${opt:stage, 'dev'}
+  region: ${env:AWS_REGION}
+  mainStateMachineName: ${self:service}-${self:custom.stageName}
+  retryMaxAttempts: 36
+  retryIntervalSeconds: 300
+  retryBackoffRate: 1
+  lambdaTimeout: 60
+  lambdaMemory: 128
+  prune:
+    automatic: true
+    number: 3
+
+# package:
+#   patterns:
+#     - "!node_modules/**"
+
+functions:
+  SampleName:
+    DependsOn: "MainQueue"
+    runtime: python3.11
+    # role: "arn:asdasd"
+    handler: lambda/SampleName/main.handler
+    timeout: ${self:custom.lambdaTimeout}
+    memorySize: ${self:custom.lambdaMemory}
+    events:
+      - sqs:
+          arn: !GetAtt MainQueue.Arn
+          batchSize: 1
+          maximumConcurrency: 2
+
+resources:
+  Resources:
+    MainQueue:
+      Type: AWS::SQS::Queue
+      DependsOn: "DeadLetterQueue"
+      Properties:
+        QueueName: ${self:service}-${self:custom.stageName}-main
+        DelaySeconds: 0
+        MessageRetentionPeriod: 345600 # 4 days
+        VisibilityTimeout: 90
+        RedrivePolicy:
+          deadLetterTargetArn:
+            Fn::GetAtt:
+              - "DeadLetterQueue"
+              - "Arn"
+          maxReceiveCount: 2 #   2 means send it twice (1 retry and on 2nd failure, send it to DLQ)
+    DeadLetterQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${self:custom.stageName}-dlq
+
+  Outputs:
+    sqsArn:
+      Value: !GetAtt MainQueue.Arn
+    sqsUrl:
+      Value: !GetAtt MainQueue.QueueUrl
+    dlqArn:
+      Value: !GetAtt DeadLetterQueue.Arn
+    dlqUrl:
+      Value: !GetAtt DeadLetterQueue.QueueUrl
