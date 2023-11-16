@@ -11,16 +11,6 @@ constructs:
     worker:
       handler: handler.consumer
 
-functions:
-  producer:
-    handler: handler.producer
-    events:
-      - httpApi:
-          method: post
-          path: /produce
-    environment:
-      QUEUE_URL: ${construct:jobs.queueUrl}
-
 plugins:
   - serverless-lift
   - serverless-python-requirements
